@@ -9,7 +9,7 @@ const app = express();
 
 console.log(path.join(__dirname, '../../..HorribleGame'));
 console.log(fs.readdirSync(path.join(__dirname, '../../../HorribleGame')));
-app.get('/HorribleGame', express.static(path.join(__dirname, '../../../HorribleGame')));
+app.use('/HorribleGame', express.static(path.join(__dirname, '../../../HorribleGame')));
 
 
 
