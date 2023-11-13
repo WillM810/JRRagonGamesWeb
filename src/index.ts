@@ -4,11 +4,11 @@ import path from 'path';
 class JRRagonGamesWeb {
   static IS_DEV: boolean = process.env.NODE_ENV === 'development';
 
-  static start() {    
+  static startServer() {    
     const app = express();
     
-    app.use('/HorribleGame', express.static(path.join(__dirname, '../../HorribleGame')));
-    app.use('/static/:path', (req, res) => res.send(path.join(process.cwd(), `../${req.params.path}`)));
+    app.use('/HorribleGame', this.serveStatic('Circuits'));
+    app.use('/static/:path', (req, res, next) => this.serveStatic(req.params.path)(req, res, next));
     
     
     
@@ -18,9 +18,8 @@ class JRRagonGamesWeb {
   }
 
   static serveStatic(staticPath: string) {
-    return JRRagonGamesWeb.IS_DEV ? (req: Request, res: Response) => res.send(path.join(process.cwd(), `../${staticPath}`))
-      : express.static(path.join(process.cwd(), (process.env.PATH_TO_STATIC_WWW || path.sep), staticPath));
+    return express.static(path.join(process.cwd(), (process.env.PATH_TO_STATIC_WWW || path.sep), staticPath));
   }
 }
 
-JRRagonGamesWeb.start();
+JRRagonGamesWeb.startServer();

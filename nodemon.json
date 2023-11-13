@@ -3,7 +3,8 @@
   "ext": ".ts,.js",
   "ignore": [],
   "env": {
-    "NODE_ENV": "development"
+    "NODE_ENV": "development",
+    "PATH_TO_STATIC_WWW": "../"
   },
   "exec": "npx ts-node ./src/index.ts"
 }
