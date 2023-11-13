@@ -5,7 +5,7 @@ module.exports = {
     watch: [ 'build' ],
     env: {
       'NODE_ENV': 'production',
-      'PATH_TO_STATIC_WWW': '../'
+      'PATH_TO_STATIC_WWW': '../../'
     }
   }]
 };
