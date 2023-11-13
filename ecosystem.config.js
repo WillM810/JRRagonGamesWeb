@@ -4,7 +4,8 @@ module.exports = {
     script: './build/index.js',
     watch: [ 'build' ],
     env: {
-      'NODE_ENV': 'production'
+      'NODE_ENV': 'production',
+      'PATH_TO_STATIC_WWW': '../'
     }
   }]
 };
