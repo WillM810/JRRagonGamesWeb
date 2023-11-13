@@ -106,5 +106,5 @@
     // "skipDefaultLibCheck": true,                      /* Skip type checking .d.ts files that are included with TypeScript. */
     "skipLibCheck": true                                 /* Skip type checking all .d.ts files. */
   },                                    /* Specify the root folder within your source files. */
-  "exclude": [ "ecosystem.config.js" ],
+  "exclude": [ "ecosystem.config.js", "build", "node_modules" ],
 }
