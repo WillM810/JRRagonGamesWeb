@@ -1,13 +1,36 @@
 import express, { Request, Response } from 'express';
-import dgram from 'dgram';
+import dgram, { RemoteInfo, Socket } from 'dgram';
 import path from 'path';
 
 class JRRagonGamesWeb {
-  static IS_DEV: boolean = process.env.NODE_ENV === 'development';
+  static readonly IS_DEV: boolean = process.env.NODE_ENV === 'development';
+  static readonly UdpServer: Socket = dgram.createSocket('udp4');
+  static isUdpListening: boolean = false;
+  static readonly udpClients: RemoteInfo[] = [];
 
-  static startServer() {    
+  static startWebServer() {    
     const app = express();
+    app.use(express.json())
     
+
+
+    app.post('/JRRagonChess', (req, res) => {
+      console.log(req.body.fish);
+      if (this.udpClients.length > 0) {
+        Promise.all(
+          this.udpClients.map(client =>
+            new Promise<void>(resolve => JRRagonGamesWeb.UdpServer.send(Buffer.from(`fish: ${req.body.fish}`), client.port, client.address, () => resolve()))
+          )
+        ).then(() => {
+          res.send('ok');
+        })
+      } else {
+        res.send('No clients connected!');
+      }
+    });
+
+
+
     app.use('/HorribleGame', this.serveStatic('Circuits'));
 
 
@@ -23,35 +46,34 @@ class JRRagonGamesWeb {
     app.listen(8085, () => console.log('Server Running.'));
   }
 
-  static startUdp() {
-    const udpServer = dgram.createSocket('udp4');
+  static startUdpServer() {
+    if (this.isUdpListening) return;
 
-    udpServer.on('error', e => {
+    JRRagonGamesWeb.UdpServer.on('error', e => {
       console.error(`Server Error: ${e.message}`);
-      udpServer.close();
+      this.isUdpListening = false;
+      JRRagonGamesWeb.UdpServer.close();
     });
 
-    udpServer.on('listening', () => {
-      const address = udpServer.address();
+    JRRagonGamesWeb.UdpServer.on('listening', () => {
+      const address = JRRagonGamesWeb.UdpServer.address();
+      this.isUdpListening = true;
       console.log(`Listening on [${address.address}:${address.port}]...`);
     });
 
-    udpServer.on('connect', () => {
-      console.log('Connection!');
-    });
-
-    udpServer.on('message', (msg, info) => {
+    JRRagonGamesWeb.UdpServer.on('message', (msg, senderInfo) => {
+      if (!this.udpClients.find(client => client.address === senderInfo.address && client.port === senderInfo.port)) this.udpClients.push(senderInfo);
       console.log(msg.toString('utf-8'));
-      udpServer.send(msg, info.port, info.address, (e, l) => {
+      JRRagonGamesWeb.UdpServer.send(msg, senderInfo.port, senderInfo.address, (e, l) => {
         console.log('Message received and returned.');
       })
     })
 
-    udpServer.bind(8007);
+    JRRagonGamesWeb.UdpServer.bind(8007);
   }
 
   static serveStatic = (staticPath: string) => express.static(path.join(process.cwd(), (process.env.PATH_TO_STATIC_WWW || path.sep), staticPath));
 }
 
-JRRagonGamesWeb.startServer();
-JRRagonGamesWeb.startUdp();
+JRRagonGamesWeb.startWebServer();
+JRRagonGamesWeb.startUdpServer();
