@@ -33,8 +33,8 @@ export class JRRagonGamesWebServer {
     });
 
 
-console.log(path.join(process.cwd(), (process.env.PATH_TO_STATIC_WWW || path.sep), 'Circuits'))
-    this.app.use('/HorribleGame', (req, res, next) => this.serveStatic('Circuits')(req, res, next));
+
+    this.app.use('/HorribleGame', this.serveStatic('Circuits'));
 
 
 
