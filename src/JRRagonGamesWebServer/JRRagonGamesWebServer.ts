@@ -4,8 +4,11 @@ import path from "path";
 
 export { Request, Response };
 
+
+
 type RouterMap = { [i: string]: Router };
-class ReceivedRequestEmitter extends EventEmitter { constructor() { super(); } }
+
+class ReceivedRequestEmitter extends EventEmitter { }
 declare interface ReceivedRequestEmitter {
   on(event: string, listener: (req: Request, res: Response) => void): this;
   emit(event: string, req: Request, res: Response): boolean;
@@ -14,9 +17,9 @@ declare interface ReceivedRequestEmitter {
 
 
 export class JRRagonGamesWebServer {
-  public static onRequestReceived = new ReceivedRequestEmitter();
-  private static app = express().use(express.json());
-  private static apiRouters: RouterMap = {};
+  public static readonly onRequestReceived = new ReceivedRequestEmitter();
+  private static readonly app = express().use(express.json());
+  private static readonly apiRouters: RouterMap = {};
 
   public static registerApiRouter(name: string) { return this.apiRouters[name] = express.Router(); }
 
@@ -30,12 +33,12 @@ export class JRRagonGamesWebServer {
     });
 
 
+console.log(path.join(process.cwd(), (process.env.PATH_TO_STATIC_WWW || path.sep), 'Circuits'))
+    this.app.use('/HorribleGame', (req, res, next) => this.serveStatic('Circuits')(req, res, next));
 
-    this.app.get('/HorribleGame', JRRagonGamesWebServer.serveStatic('Circuits'));
 
 
-
-    this.app.get('/static/:path', (req, res, next) => JRRagonGamesWebServer.serveStatic(req.params.path)(req, res, next));
+    this.app.use('/static/:path', (req, res, next) => this.serveStatic(req.params.path)(req, res, next));
     
     
     
