@@ -1,10 +1,3 @@
-import { JRRagonGamesWebServer } from './JRRagonGamesWebServer/JRRagonGamesWebServer';
-import { JRRagonChessUdpServer } from './JRRagonChess/JRRagonChessUdpServer';
+import { JRRagonNetServer } from './JRRagonNetServer/JRRagonNetServer';
 
-class JRRagonGamesServer {
-  static readonly IS_DEV: boolean = process.env.NODE_ENV === 'development';
-}
-
-JRRagonGamesWebServer.startWebServer();
-
-JRRagonChessUdpServer.startUdpServer();
+new JRRagonNetServer().start();
