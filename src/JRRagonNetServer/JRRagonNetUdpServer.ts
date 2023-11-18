@@ -10,8 +10,8 @@ type ManagedConnection = {
   sessionKey: string;
 };
 
-class ReceivedUdpMsgEmitter extends EventEmitter { }
-declare interface ReceivedUdpMsgEmitter {
+class JRRagonNetUpdateEmitter extends EventEmitter { }
+declare interface JRRagonNetUpdateEmitter {
   on(event: 'udpMsg', listener: (data: Buffer, clientKey: string) => void): this;
   emit(event: 'udpMsg', data: Buffer, clientKey: string): boolean;
 
@@ -21,7 +21,7 @@ declare interface ReceivedUdpMsgEmitter {
 
 export class JRRagonNetUdpServer {
   public isUdpListening: boolean = false;
-  public readonly onUdpMsgReceived: ReceivedUdpMsgEmitter = new ReceivedUdpMsgEmitter();
+  public readonly onJRRagonNetUpdate: JRRagonNetUpdateEmitter = new JRRagonNetUpdateEmitter();
 
   private readonly udpSocket: Socket = dgram.createSocket('udp4');
   private managedConnections: ManagedConnection[] = [];
@@ -51,7 +51,8 @@ export class JRRagonNetUdpServer {
     setTimeout(this.pruneConnections.bind(this), 500);
 
     return this.apiRouter = webServer.registerApiRouter(apiName)
-      .post('/pong', this.handlePong.bind(this));
+      .post('/pong', this.handlePong.bind(this))
+      .post('/disconnect', this.disconnect.bind(this));
   }
 
 
@@ -72,7 +73,7 @@ export class JRRagonNetUdpServer {
   private pruneConnections() {
     for (let i = this.managedConnections.length - 1; i >= 0; i--) {
       const disconnectedClient = this.managedConnections.splice(i, Date.now() - this.managedConnections[i].lastUpdate < (15 * 1000) ? 0 : 1);
-      if (disconnectedClient.length) this.onUdpMsgReceived.emit('disconnect', disconnectedClient[0].sessionKey);
+      if (disconnectedClient.length) this.onJRRagonNetUpdate.emit('disconnect', disconnectedClient[0].sessionKey);
     }
 
     const connectionPings = this.managedConnections.filter(client => Date.now() - client.lastUpdate > 10 * 1000)
@@ -86,7 +87,7 @@ export class JRRagonNetUdpServer {
     const session = this.managedConnections.find(client => client.sessionKey === msgParts[1]);
     if (!session) return;
 
-    if (msgParts[0] !== 'ping') return this.onUdpMsgReceived.emit('udpMsg', msg, session.sessionKey);    
+    if (msgParts[0] !== 'ping') return this.onJRRagonNetUpdate.emit('udpMsg', msg, session.sessionKey);    
 
     session.client = senderInfo;
     this._send(Buffer.from(`pong:${session.sessionKey}:${session.lastUpdate}`), senderInfo).then(() => {});
@@ -109,5 +110,14 @@ export class JRRagonNetUdpServer {
       udpPort: this.udpSocket.address().port,
       messages: []
     });
+  }
+
+  private disconnect(req: Request, res: Response) {
+    const idx = this.managedConnections.findIndex(c => c.sessionKey === req.body.sessionKey);
+    if (idx === -1) return res.status(404).json(req.body);
+
+    const disconnectedClient = this.managedConnections.splice(idx, 1);
+    this.onJRRagonNetUpdate.emit('disconnect', disconnectedClient[0].sessionKey);
+    res.json(req.body);
   }
 }

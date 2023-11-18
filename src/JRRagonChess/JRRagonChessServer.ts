@@ -30,7 +30,7 @@ export class JRRagonChessServer {
     this.udpServer = new JRRagonNetUdpServer();
     const apiRouter = this.udpServer.startManagedUdpServer(webServer, 'JRRagonChess');
 
-    this.udpServer.onUdpMsgReceived.on('disconnect', this.clientDisconnected.bind(this));
+    this.udpServer.onJRRagonNetUpdate.on('disconnect', this.clientDisconnected.bind(this));
 
     apiRouter.post('/findGame', this.findGame.bind(this));
     apiRouter.post('/postMove', this.postMove.bind(this));
@@ -55,12 +55,9 @@ export class JRRagonChessServer {
 
   private findGame(req: Request, res: Response) {
     const gameRequest = req.body as GameRequest;
-    console.log(gameRequest);
     const matchingRequests = this.findMatchingRequest(gameRequest);
-    console.log(matchingRequests);
 
     if (!matchingRequests.length) {
-      console.log(matchingRequests.length);
       const pendingRequests = this.pendingGameRequests.map(r => ({
         position: !r.requirePosition ? 'open' : r.position,
         team: !r.requireTeam ? -1 : r.teamIndex
@@ -82,7 +79,6 @@ export class JRRagonChessServer {
   }
 
   private startGame(gameRequest: GameRequest, match: GameRequest) {
-    console.log(match, gameRequest);
     const position = !gameRequest.requirePosition ? match.position ?? this.STARTPOS : gameRequest.position,
       teamIndex = gameRequest.requireTeam ? gameRequest.teamIndex : (match.requireTeam ? match.teamIndex ^ 1 : 1);
           
@@ -91,7 +87,7 @@ export class JRRagonChessServer {
       playerBlack: teamIndex === 1 ? gameRequest.sessionKey : match.sessionKey,
       rematchRequest: undefined,
     });
-    this.pendingGameRequests.splice(this.pendingGameRequests.findIndex(r => r === match), 1);
+    this.pendingGameRequests.splice(this.pendingGameRequests.findIndex(r => r.sessionKey === match.sessionKey), 1);
 
     const startGame = `startGame:${position}:`;
     this.udpServer!.send(Buffer.from(startGame + teamIndex), gameRequest.sessionKey);
@@ -102,7 +98,6 @@ export class JRRagonChessServer {
 
   private postMove(req: Request, res: Response) {
     const { move, sessionKey } = req.body;
-    console.log(move);
     const matchedGame = this.matchedGames.find(g => g.playerWhite === sessionKey || g.playerBlack === sessionKey);
     if (!matchedGame) return res.status(404).json({ sessionKey });
 
@@ -113,7 +108,6 @@ export class JRRagonChessServer {
   }
 
   private rematch(req: Request, res: Response) {
-    console.log(req.body);
     const { position, teamIndex, sessionKey, confirm } = req.body;
     const matchedGame = this.matchedGames.find(g => g.playerWhite === sessionKey || g.playerBlack === sessionKey);
     if (!matchedGame) return res.status(404).json({ sessionKey });
